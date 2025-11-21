@@ -1,0 +1,125 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+#define MAX_SIZE 100
+#define CAPACITY 20  // Max capacity of truck/airplane (in tons or kg)
+
+typedef struct {
+    float weight[MAX_SIZE];
+    float profit[MAX_SIZE];
+    float p_w[MAX_SIZE];
+    float sol_vector[MAX_SIZE];
+    int size;
+} CargoSet;
+
+// Check function (can be used for validation)
+int check(CargoSet *s) {
+    if (s->size > MAX_SIZE) {
+        printf("Error: Too many cargo items!\n");
+        return -1;
+    }
+    return 0;
+}
+
+// Take cargo details from user
+void addCargoDetails(CargoSet *s, int n) {
+    for (int i = 0; i < n; i++) {
+        printf("\nEnter weight (in tons) of cargo %d: ", i + 1);
+        scanf("%f", &s->weight[i]);
+
+        printf("Enter profit (in ₹ thousands) of cargo %d: ", i + 1);
+        scanf("%f", &s->profit[i]);
+    }
+    s->size = n;
+    check(s);
+}
+
+// Compute profit/weight ratio and sort cargos
+void computeProfitWeightRatio(CargoSet *s) {
+    int i, j;
+    float temp;
+
+    // Calculate profit/weight ratio
+    for (i = 0; i < s->size; i++) {
+        s->p_w[i] = s->profit[i] / s->weight[i];
+    }
+
+    // Sort in decreasing order of profit/weight
+    for (i = 0; i < s->size - 1; i++) {
+        for (j = 0; j < s->size - i - 1; j++) {
+            if (s->p_w[j] < s->p_w[j + 1]) {
+                temp = s->p_w[j];
+                s->p_w[j] = s->p_w[j + 1];
+                s->p_w[j + 1] = temp;
+
+                temp = s->weight[j];
+                s->weight[j] = s->weight[j + 1];
+                s->weight[j + 1] = temp;
+
+                temp = s->profit[j];
+                s->profit[j] = s->profit[j + 1];
+                s->profit[j + 1] = temp;
+            }
+        }
+    }
+
+    printf("\nAfter Sorting (By Profit/Weight Ratio):\n");
+    printf("---------------------------------------\n");
+    printf("Cargo\tWeight\tProfit\tP/W Ratio\n");
+    for (i = 0; i < s->size; i++) {
+        printf("%d\t%.2f\t%.2f\t%.2f\n", i + 1, s->weight[i], s->profit[i], s->p_w[i]);
+    }
+}
+
+// Load cargo into the vehicle
+void loadCargo(CargoSet *s) {
+    float total_profit = 0.0;
+    float total_weight = 0.0;
+    float fractional_weight;
+    float remaining_capacity = CAPACITY;
+
+    for (int k = 0; k < s->size; k++) s->sol_vector[k] = 0;
+
+    for (int i = 0; i < s->size; i++) {
+        if (s->weight[i] <= remaining_capacity) {
+            remaining_capacity -= s->weight[i];
+            total_weight += s->weight[i];
+            total_profit += s->profit[i];
+            s->sol_vector[i] = 1; // full cargo loaded
+        } else {
+            fractional_weight = remaining_capacity;
+            total_weight += fractional_weight;
+            total_profit += s->profit[i] * (fractional_weight / s->weight[i]);
+            s->sol_vector[i] = fractional_weight / s->weight[i];
+            break; // capacity full
+        }
+    }
+
+    printf("\n================= RESULTS =================\n");
+    printf("Total Cargo Weight Loaded: %.2f tons\n", total_weight);
+    printf("Total Profit Earned: ₹%.2f thousands\n", total_profit);
+    printf("\nCargo Loading Fraction (Solution Vector):\n");
+    for (int k = 0; k < s->size; k++) {
+        printf("Cargo %d -> %.2f\n", k + 1, s->sol_vector[k]);
+    }
+    printf("===========================================\n");
+}
+
+int main() {
+    CargoSet cargo;
+    cargo.size = 0;
+
+    int n;
+    printf("========== Cargo Loading Optimization ==========\n");
+    printf("Enter total number of cargo items: ");
+    scanf("%d", &n);
+
+    addCargoDetails(&cargo, n);
+    computeProfitWeightRatio(&cargo);
+    loadCargo(&cargo);
+
+    printf("\n✅ Loading Complete! Maximum profit achieved within weight limit.\n");
+    printf("=============================================\n");
+
+    return 0;
+}
